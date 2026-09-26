@@ -1,0 +1,16 @@
+{
+  "name": "mokano-graduation-message",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev",
+    "mock:db": "node scripts/mock-supabase.mjs",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "build:functions": "wrangler pages functions build --outdir .wrangler/functions-check"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "wrangler": "^4.141.0"
+  }
+}

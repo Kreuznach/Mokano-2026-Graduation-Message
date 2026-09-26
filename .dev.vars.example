@@ -1,0 +1,11 @@
+# 로컬 개발용 예시입니다. 이 파일을 .dev.vars 로 복사한 뒤 값을 채우세요. (.dev.vars 는 git 에 올리지 않습니다)
+# 운영에서는 Cloudflare Pages → Settings → Variables and Secrets 에 같은 이름으로 넣습니다.
+
+# 기존 mokano.live 와 같은 Supabase 프로젝트 주소 (mokano.live 의 NEXT_PUBLIC_SUPABASE_URL 과 같은 값. 그 이름으로 넣어도 됨)
+SUPABASE_URL=
+# 서버 전용 키 (편지 전용 sb_secret_... 추천, 또는 service_role). 절대 NEXT_PUBLIC_ / VITE_ 공개 변수로 만들지 마세요.
+SUPABASE_SERVICE_ROLE_KEY=
+# 브라우저 식별 쿠키 서명용 무작위 문자열 (32자 이상)
+LETTER_COOKIE_SECRET=
+# (선택) 다른 도메인에서 프록시할 때만. 쉼표로 구분한 허용 Origin
+LETTER_ALLOWED_ORIGINS=
