@@ -30,13 +30,65 @@ function fail(status, code, extra = {}, headers = {}) {
 }
 
 /* ---------- 설정 ---------- */
-function readConfig(env) {
-  // mokano.live(Vercel) 는 NEXT_PUBLIC_SUPABASE_URL 이름을 씀
+// legacy JWT 키의 payload(ref, role)만 읽음. 서명 검증은 Supabase 가 함
+function readJwtPayload(key) {
+  const part = key.split('.')[1];
+  if (!part) return null;
+  try {
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch {
+    return null;
+  }
+}
+
+/** 설정 문제를 비밀값 없이 설명하는 코드. 문제가 없으면 null */
+export function findConfigProblem(env) {
   const supabaseUrl = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL;
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const secret = env.LETTER_COOKIE_SECRET;
-  if (!supabaseUrl || !serviceKey || !secret || secret.length < 32) return null;
-  return { supabaseUrl: supabaseUrl.replace(/\/+$/, ''), serviceKey, secret };
+  if (!supabaseUrl) return 'missing SUPABASE_URL';
+  if (!serviceKey) return 'missing SUPABASE_SERVICE_ROLE_KEY';
+  if (!secret) return 'missing LETTER_COOKIE_SECRET';
+  if (secret.length < 32) return 'LETTER_COOKIE_SECRET shorter than 32 chars';
+  let host;
+  try {
+    host = new URL(supabaseUrl).hostname;
+  } catch {
+    return 'SUPABASE_URL is not a valid URL';
+  }
+  if (serviceKey.startsWith('sb_publishable_')) return 'SUPABASE_SERVICE_ROLE_KEY is a publishable key, not a secret key';
+  if (!serviceKey.startsWith('sb_')) {
+    const payload = readJwtPayload(serviceKey);
+    if (!payload) return 'SUPABASE_SERVICE_ROLE_KEY is not a valid key';
+    if (payload.role !== 'service_role') return `SUPABASE_SERVICE_ROLE_KEY has role "${payload.role}", expected "service_role"`;
+    const urlRef = host.endsWith('.supabase.co') ? host.split('.')[0] : null;
+    if (urlRef && payload.ref && payload.ref !== urlRef) {
+      return `SUPABASE_SERVICE_ROLE_KEY belongs to project "${payload.ref}" but SUPABASE_URL is project "${urlRef}"`;
+    }
+  }
+  return null;
+}
+
+function readConfig(env) {
+  const problem = findConfigProblem(env);
+  if (problem) {
+    console.error(`[letters] server misconfigured: ${problem}`);
+    return null;
+  }
+  // mokano.live(Vercel) 는 NEXT_PUBLIC_SUPABASE_URL 이름을 씀
+  const supabaseUrl = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || env.VITE_SUPABASE_URL;
+  return { supabaseUrl: supabaseUrl.replace(/\/+$/, ''), serviceKey: env.SUPABASE_SERVICE_ROLE_KEY, secret: env.LETTER_COOKIE_SECRET };
+}
+
+// 일시 장애가 아니라 설정을 고쳐야 하는 Supabase 응답
+export function describeRpcConfigError(err) {
+  if (!err) return null;
+  if (err.status === 401 || (err.status === 403 && err.code !== '42501')) {
+    return 'Supabase rejected SUPABASE_SERVICE_ROLE_KEY (wrong project, revoked, or not a service key)';
+  }
+  if (err.code === 'PGRST202' || err.code === '42883') return 'letter RPC not found: apply supabase/migrations/20260926000000_create_moka_graduation_letters.sql';
+  if (err.code === '42501') return 'permission denied: key is not service_role or migration grants are missing';
+  return null;
 }
 
 // 서버에서 service role/secret 키로 PostgREST RPC 호출. 키는 응답·로그에 남기지 않음
@@ -174,13 +226,20 @@ function logError(where, err) {
   console.error(`[letters] ${where}`, err ? { status: err.status, code: err.code, name: err.name } : {});
 }
 
+function rpcFailure(where, err, headers = {}) {
+  const configError = describeRpcConfigError(err);
+  if (configError) {
+    console.error(`[letters] server misconfigured: ${configError}`, { status: err.status, code: err.code });
+    return fail(500, 'server_misconfigured', {}, headers);
+  }
+  logError(where, err);
+  return fail(503, 'storage_unavailable', {}, headers);
+}
+
 /* ---------- GET /api/letters/status ---------- */
 export async function handleStatus(request, env, deps = {}) {
   const config = readConfig(env);
-  if (!config) {
-    logError('status: missing server configuration');
-    return fail(500, 'server_misconfigured');
-  }
+  if (!config) return fail(500, 'server_misconfigured');
   const browser = await resolveBrowser(request, config.secret);
   const setCookie = { 'Set-Cookie': cookieHeader(request, browser.cookieValue) };
 
@@ -199,8 +258,7 @@ export async function handleStatus(request, env, deps = {}) {
       serverNow: new Date(Number(r.server_now_ms)).toISOString(),
     }, setCookie);
   } catch (err) {
-    logError('status rpc failed', err);
-    return fail(503, 'storage_unavailable', {}, setCookie);
+    return rpcFailure('status rpc failed', err, setCookie);
   }
 }
 
@@ -212,10 +270,7 @@ export async function handleSubmit(request, env, deps = {}) {
   }
 
   const config = readConfig(env);
-  if (!config) {
-    logError('submit: missing server configuration');
-    return fail(500, 'server_misconfigured');
-  }
+  if (!config) return fail(500, 'server_misconfigured');
 
   // 클라이언트가 보낸 식별자는 믿지 않음. 서버 서명이 맞는 쿠키가 없으면 새로 발급하고 저장은 거절
   const browser = await resolveBrowser(request, config.secret);
@@ -254,8 +309,7 @@ export async function handleSubmit(request, env, deps = {}) {
       p_content: checked.value.content,
     });
   } catch (err) {
-    logError('submit rpc failed', err);
-    return fail(503, 'storage_unavailable');
+    return rpcFailure('submit rpc failed', err);
   }
 
   const nextMs = Number(r.next_allowed_at_ms);

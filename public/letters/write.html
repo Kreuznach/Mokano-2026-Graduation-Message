@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>모카에게 보내는 편지 · 모카 한 모금</title>
-  <meta name="description" content="모카의 마지막 무대를 기념해 팬이 모카에게 편지를 보내는 페이지." />
+  <meta name="description" content="모카의 마지막 라이브를 기념해 팬이 모카에게 편지를 보내는 페이지. モカのラストライブを記念して、モカへ手紙を送るページ。" />
   <meta name="theme-color" content="#DDD9ED" />
   <meta name="robots" content="noindex" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
@@ -18,11 +18,15 @@
   <div class="page">
     <header class="top-bar">
       <!-- 돌아갈 곳이 바뀌면 이 주소만 고치세요 -->
-      <a class="back-link" href="https://mokano.live/"><span aria-hidden="true">←</span> 모카 한 모금으로 돌아가기</a>
+      <a class="back-link" href="https://mokano.live/"><span aria-hidden="true">←</span> <span data-i18n="backLink">모카 한 모금으로 돌아가기</span></a>
+      <div class="lang-switch" role="group" data-i18n-aria="langGroupAria" aria-label="언어 선택">
+        <button type="button" class="chip-btn" data-lang="ko" lang="ko" aria-pressed="true">한국어</button>
+        <button type="button" class="chip-btn" data-lang="ja" lang="ja" aria-pressed="false">日本語</button>
+      </div>
     </header>
 
     <main class="content">
-      <p class="eyebrow">MOKA · LAST STAGE</p>
+      <p class="eyebrow">MOKA · LAST LIVE</p>
 
       <header class="card card--hero">
         <div class="mini-envelope" aria-hidden="true">
@@ -31,9 +35,9 @@
           <span class="mini-envelope__flap"></span>
           <span class="mini-envelope__seal">♥</span>
         </div>
-        <h1 class="hero-title">모카에게 보내는 편지</h1>
-        <p class="hero-subtitle">함께한 마음을, 오래 남을 편지로.</p>
-        <p class="hero-lead">아쉬운 마음도, 앞으로의 응원도 괜찮아요.</p>
+        <h1 class="hero-title" data-i18n="title">모카에게 보내는 편지</h1>
+        <p class="hero-subtitle" data-i18n="subtitle">함께한 마음을, 오래 남을 편지로.</p>
+        <p class="hero-lead" data-i18n="lead">아쉬운 마음도, 앞으로의 응원도 괜찮아요.</p>
       </header>
 
       <section class="card card--letter" aria-labelledby="letter-heading">
@@ -42,33 +46,31 @@
         <form class="letter-form" id="letter-form" novalidate>
           <div class="field">
             <div class="field-head">
-              <label class="field-label" for="sender-name">보내는 사람 <span class="field-optional">(선택)</span></label>
+              <label class="field-label" for="sender-name"><span data-i18n="senderLabel">보내는 사람</span> <span class="field-optional" data-i18n="optional">(선택)</span></label>
               <span class="field-count" id="sender-count" aria-hidden="true">0 / 40</span>
             </div>
             <input class="text-input" id="sender-name" name="senderName" type="text" autocomplete="nickname"
-              spellcheck="false" placeholder="익명" aria-describedby="sender-hint sender-error" />
-            <p class="field-hint" id="sender-hint">비워 두면 익명으로 전달돼요. 최대 40자.</p>
+              spellcheck="false" placeholder="익명" data-i18n-placeholder="senderPlaceholder" aria-describedby="sender-hint sender-error" />
+            <p class="field-hint" id="sender-hint" data-i18n="senderHint">비워 두면 익명으로 전달돼요. 최대 40자.</p>
             <p class="field-error" id="sender-error" hidden></p>
           </div>
 
           <div class="field">
             <div class="field-head">
-              <label class="field-label" for="letter-content">편지 내용</label>
+              <label class="field-label" for="letter-content" data-i18n="contentLabel">편지 내용</label>
             </div>
-            <p class="field-hint" id="content-guide">추억 한 장면이나 고마웠던 마음을 적어 주세요.</p>
+            <p class="field-hint" id="content-guide" data-i18n="contentGuide">추억 한 장면이나 고마웠던 마음을 적어 주세요.</p>
             <div class="paper">
               <textarea class="paper-input" id="letter-content" name="content" rows="10" required
                 aria-describedby="content-guide content-meta content-error"></textarea>
             </div>
-            <p class="field-meta" id="content-meta">
-              <span id="content-lines">1</span> / 2,000줄 · <span id="content-bytes">0KB</span> / 256KB
-            </p>
+            <p class="field-meta" id="content-meta">0 / 2,000줄 · 0.0KB / 256KB</p>
             <p class="field-error" id="content-error" hidden></p>
           </div>
 
           <ul class="form-notes">
-            <li>편지는 관리자 확인 후 모카에게 전달돼요.</li>
-            <li>편지는 한 번 보내면 48시간 후에 다시 보낼 수 있어요.</li>
+            <li data-i18n="noteReview">편지는 관리자 확인 후 모카에게 전달돼요.</li>
+            <li data-i18n="noteCooldown">편지는 한 번 보내면 48시간 후에 다시 보낼 수 있어요.</li>
           </ul>
 
           <p class="form-error" id="form-error" role="alert" hidden></p>
@@ -84,28 +86,28 @@
             <span class="mini-envelope__flap"></span>
             <span class="mini-envelope__seal">♥</span>
           </div>
-          <h2 class="result-title" id="success-title" tabindex="-1">편지를 잘 받았어요.</h2>
-          <p class="result-text">관리자 확인 후 모카에게 전달할게요.</p>
-          <p class="result-next">다음 편지는 <time id="success-next"></time>부터 보낼 수 있어요.</p>
-          <p class="result-remaining">남은 시간 <span class="remaining" id="success-remaining" aria-hidden="true"></span></p>
+          <h2 class="result-title" id="success-title" tabindex="-1" data-i18n="successTitle">편지를 잘 받았어요.</h2>
+          <p class="result-text" data-i18n="successText">관리자 확인 후 모카에게 전달할게요.</p>
+          <p class="result-next"><span data-i18n="nextPrefix">다음 편지는 </span><time id="success-next"></time><span data-i18n="nextSuffix">부터 보낼 수 있어요.</span></p>
+          <p class="result-remaining"><span data-i18n="remainingPrefix">남은 시간 </span><span class="remaining" id="success-remaining" aria-hidden="true"></span></p>
         </div>
 
         <div class="result-panel" id="limited-panel" hidden>
-          <h2 class="result-title" id="limited-title" tabindex="-1">조금만 쉬었다가 다시 써 주세요</h2>
-          <p class="result-text">이 브라우저에서 최근에 보낸 편지가 있어요. 편지는 한 번 보내면 48시간 후에 다시 보낼 수 있어요.</p>
-          <p class="result-next">다음 편지는 <time id="limited-next"></time>부터 보낼 수 있어요.</p>
-          <p class="result-remaining">남은 시간 <span class="remaining" id="limited-remaining" aria-hidden="true"></span></p>
-          <p class="result-hint" id="limited-kept" hidden>쓰던 내용은 이 창을 닫지 않으면 그대로 남아 있어요.</p>
+          <h2 class="result-title" id="limited-title" tabindex="-1" data-i18n="limitedTitle">조금만 쉬었다가 다시 써 주세요</h2>
+          <p class="result-text" data-i18n="limitedText">이 브라우저에서 최근에 보낸 편지가 있어요. 편지는 한 번 보내면 48시간 후에 다시 보낼 수 있어요.</p>
+          <p class="result-next"><span data-i18n="nextPrefix">다음 편지는 </span><time id="limited-next"></time><span data-i18n="nextSuffix">부터 보낼 수 있어요.</span></p>
+          <p class="result-remaining"><span data-i18n="remainingPrefix">남은 시간 </span><span class="remaining" id="limited-remaining" aria-hidden="true"></span></p>
+          <p class="result-hint" id="limited-kept" data-i18n="limitedKept" hidden>쓰던 내용은 이 창을 닫지 않으면 그대로 남아 있어요.</p>
         </div>
       </section>
 
       <section class="card card--guide" aria-labelledby="guide-title">
-        <h2 class="guide-title" id="guide-title">마음을 전하기 전에</h2>
+        <h2 class="guide-title" id="guide-title" data-i18n="guideTitle">마음을 전하기 전에</h2>
         <ul class="guide-list">
-          <li>편지는 최대 2,000줄까지 쓸 수 있어요. 아주 긴 글은 전체 256KB까지 보낼 수 있어요.</li>
-          <li>보낸 편지는 고치거나 되돌릴 수 없어요. 보내기 전에 한 번 더 읽어 봐 주세요.</li>
-          <li>연락처, 주소 같은 개인정보나 다른 사람을 아프게 하는 말은 적지 말아 주세요.</li>
-          <li>48시간 안내는 이 브라우저 기준이에요. 쿠키를 지우면 기록이 사라질 수 있어요.</li>
+          <li data-i18n="guide1">편지는 최대 2,000줄까지 쓸 수 있어요. 아주 긴 글은 전체 256KB까지 보낼 수 있어요.</li>
+          <li data-i18n="guide2">보낸 편지는 고치거나 되돌릴 수 없어요. 보내기 전에 한 번 더 읽어 봐 주세요.</li>
+          <li data-i18n="guide3">연락처, 주소 같은 개인정보나 다른 사람을 아프게 하는 말은 적지 말아 주세요.</li>
+          <li data-i18n="guide4">48시간 안내는 이 브라우저 기준이에요. 쿠키를 지우면 기록이 사라질 수 있어요.</li>
         </ul>
       </section>
     </main>
@@ -114,15 +116,15 @@
       <div class="utility">
         <button type="button" class="chip-btn chip-btn--small" id="motion-btn">움직임 끄기</button>
       </div>
-      <p class="footer-name">모카 한 모금</p>
-      <p class="footer-line">함께한 시간은 오래 남아.</p>
+      <p class="footer-name" data-i18n="footerName">모카 한 모금</p>
+      <p class="footer-line" data-i18n="footerLine">함께한 시간은 오래 남아.</p>
     </footer>
   </div>
 
   <div class="sr-only" id="live" aria-live="polite" aria-atomic="true"></div>
 
   <noscript>
-    <p class="noscript-note">편지를 보내려면 JavaScript가 켜져 있어야 해요.</p>
+    <p class="noscript-note">편지를 보내려면 JavaScript가 켜져 있어야 해요. / 手紙を送るには JavaScript を有効にしてください。</p>
   </noscript>
 </body>
 </html>

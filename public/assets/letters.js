@@ -1,44 +1,20 @@
 import { LETTER_RULES, validateLetter } from './letter-rules.js';
 import { createEmojiLayer } from './emoji-layer.js';
+import { I18N, LANGS } from './letters-i18n.js';
 
 const API = { status: '/api/letters/status', submit: '/api/letters' };
 // 서버가 알려 준 "다음 작성 가능 시각"만 캐시 (화면 복원용. 제한의 최종 판단은 서버)
-const STORAGE_KEYS = { nextAllowedAt: 'mokano:letters:nextAllowedAt', motion: 'mokano:letters:motion' };
+const STORAGE_KEYS = {
+  nextAllowedAt: 'mokano:letters:nextAllowedAt',
+  motion: 'mokano:letters:motion',
+  lang: 'mokano:letters:lang',
+};
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const STATUS_RECHECK_GAP_MS = 4000;
 const RETRY_DELAY_MS = 1200;
 
-const LABELS = {
-  submit: '편지 보내기',
-  submitting: '편지 보내는 중…',
-  checking: '확인하는 중…',
-  motionOff: '움직임 끄기',
-  motionOn: '움직임 켜기',
-};
-
-const numberFormat = new Intl.NumberFormat('ko-KR');
-const fmt = (n) => numberFormat.format(n);
 const kb = (bytes) => (Math.ceil((bytes / 1024) * 10) / 10).toFixed(bytes >= 10 * 1024 ? 0 : 1);
-
-const FIELD_MESSAGES = {
-  name_too_long: (s) => `이름은 ${LETTER_RULES.nameMaxChars}자까지 쓸 수 있어요. (지금 ${fmt(s.nameChars)}자)`,
-  name_invalid: () => '이름에 쓸 수 없는 문자가 들어 있어요.',
-  content_required: () => '편지 내용을 적어 주세요. 공백만으로는 보낼 수 없어요.',
-  content_invalid: () => '편지에 저장할 수 없는 문자가 들어 있어요. 복사해 온 글이라면 깨진 글자를 지우고 다시 시도해 주세요.',
-  content_too_many_lines: (s) => `편지는 ${fmt(LETTER_RULES.contentMaxLines)}줄까지 보낼 수 있어요. (지금 ${fmt(s.lines)}줄)`,
-  content_too_large: (s) => `편지가 너무 길어요. 전체 256KB까지 보낼 수 있어요. (지금 약 ${kb(s.bytes)}KB)`,
-};
-
-const KEEP = '쓴 내용은 그대로 남아 있어요.';
-const SERVER_MESSAGES = {
-  network: `인터넷 연결이 불안정해서 편지를 보내지 못했어요. ${KEEP} 잠시 후 다시 눌러 주세요.`,
-  storage_unavailable: `편지함이 잠시 응답하지 않아요. ${KEEP} 잠시 후 다시 눌러 주세요.`,
-  server_misconfigured: `지금은 편지를 받을 준비가 되지 않았어요. ${KEEP} 내용을 따로 복사해 두고 나중에 다시 시도해 주세요.`,
-  browser_cookie_required: `이 브라우저가 확인용 쿠키를 저장하지 않아 편지를 보낼 수 없어요. ${KEEP} 쿠키(사이트 데이터) 저장을 허용한 뒤 다시 눌러 주세요.`,
-  forbidden_origin: `이 주소에서는 편지를 보낼 수 없어요. ${KEEP} 공식 페이지 주소에서 다시 시도해 주세요.`,
-  payload_too_large: `편지가 너무 길어요. 전체 256KB까지 보낼 수 있어요. ${KEEP}`,
-  default: `편지를 보내지 못했어요. ${KEEP} 잠시 후 다시 눌러 주세요.`,
-};
+const t = () => I18N[state.lang];
 
 /* ---------- 저장소 (막혀 있어도 페이지는 동작) ---------- */
 const storage = {
@@ -66,6 +42,9 @@ const state = {
   metaFrame: 0,
   motionPref: null,
   confirmedWait: false, // 서버가 제한 중이라고 확인해 준 적이 있는지 (다시 쓸 수 있게 됐을 때만 알림)
+  lang: 'ko',
+  formErrorCode: '', // 언어를 바꿨을 때 같은 오류를 다시 번역해 보여 주기 위함
+  statusNoteKey: '',
 };
 
 const els = {};
@@ -92,7 +71,7 @@ function formatRemaining(ms) {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  return h > 0 ? `${h}시간 ${pad(m)}분 ${pad(s)}초` : `${m}분 ${pad(s)}초`;
+  return t().remaining(h, m, s);
 }
 
 function setNextAllowed(ms) {
@@ -112,27 +91,34 @@ function announce(text) {
   setTimeout(() => { els.live.textContent = text; }, 60);
 }
 
-function showFormError(text) {
-  els.formError.textContent = text;
-  els.formError.hidden = false;
+function renderFormError() {
+  const code = state.formErrorCode;
+  els.formError.textContent = code ? t().server[code] || t().server.default : '';
+  els.formError.hidden = !code;
+}
+
+function showFormError(code) {
+  state.formErrorCode = code || 'default';
+  renderFormError();
 }
 
 function hideFormError() {
-  els.formError.hidden = true;
-  els.formError.textContent = '';
+  state.formErrorCode = '';
+  renderFormError();
 }
 
-function showStatusNote(text) {
-  els.formStatus.textContent = text || '';
-  els.formStatus.hidden = !text;
+function showStatusNote(key) {
+  state.statusNoteKey = key || '';
+  els.formStatus.textContent = key ? t()[key] : '';
+  els.formStatus.hidden = !key;
 }
 
 /* ---------- 화면 전환 ---------- */
 function updateSubmitButton() {
   const btn = els.submitBtn;
-  if (state.submitting) btn.textContent = LABELS.submitting;
-  else if (state.view === 'checking') btn.textContent = LABELS.checking;
-  else btn.textContent = LABELS.submit;
+  if (state.submitting) btn.textContent = t().submitting;
+  else if (state.view === 'checking') btn.textContent = t().checking;
+  else btn.textContent = t().submit;
   btn.disabled = state.submitting || state.view !== 'form';
 }
 
@@ -195,7 +181,7 @@ async function checkStatus({ force = false } = {}) {
   if (!data) {
     if (state.view === 'checking') {
       showView('form');
-      showStatusNote('작성 가능 여부를 확인하지 못했어요. 보내기를 누르면 다시 확인해요.');
+      showStatusNote('statusCheckFailed');
     }
     return;
   }
@@ -208,9 +194,9 @@ async function checkStatus({ force = false } = {}) {
     state.confirmedWait = true;
     if (state.view === 'success') showView('success');
     else if (state.view === 'limited') showView('limited');
-    else showView('limited', { message: `이 브라우저에서 최근에 보낸 편지가 있어요. 다음 편지는 ${formatKst(next)}부터 보낼 수 있어요.` });
+    else showView('limited', { message: t().announceLimited(formatKst(next)) });
   } else if (state.view !== 'form') {
-    showView('form', state.confirmedWait ? { message: '이제 새 편지를 보낼 수 있어요.' } : {});
+    showView('form', state.confirmedWait ? { message: t().announceReady } : {});
     state.confirmedWait = false;
   }
 }
@@ -223,11 +209,14 @@ function setFieldError(input, el, message) {
   else input.removeAttribute('aria-invalid');
 }
 
+function fieldMessage(code, stats) {
+  const fn = code && t().field[code];
+  return fn ? fn(stats, kb(stats.bytes)) : '';
+}
+
 function renderFieldErrors(result) {
-  const nameCode = result.errors.senderName;
-  const contentCode = result.errors.content;
-  setFieldError(els.name, els.nameError, nameCode && FIELD_MESSAGES[nameCode] ? FIELD_MESSAGES[nameCode](result.stats) : '');
-  setFieldError(els.content, els.contentError, contentCode && FIELD_MESSAGES[contentCode] ? FIELD_MESSAGES[contentCode](result.stats) : '');
+  setFieldError(els.name, els.nameError, fieldMessage(result.errors.senderName, result.stats));
+  setFieldError(els.content, els.contentError, fieldMessage(result.errors.content, result.stats));
 }
 
 function readForm() {
@@ -237,9 +226,8 @@ function readForm() {
 function updateMeta() {
   const result = readForm();
   const { nameChars, lines, bytes } = result.stats;
-  els.senderCount.textContent = `${fmt(nameChars)} / ${LETTER_RULES.nameMaxChars}`;
-  els.lines.textContent = fmt(els.content.value === '' ? 0 : lines);
-  els.bytes.textContent = `${kb(bytes)}KB`;
+  els.senderCount.textContent = t().nameCount(nameChars, LETTER_RULES.nameMaxChars);
+  els.meta.textContent = t().meta(els.content.value === '' ? 0 : lines, kb(bytes));
   els.senderCount.classList.toggle('is-over', nameChars > LETTER_RULES.nameMaxChars);
   els.meta.classList.toggle('is-over', lines > LETTER_RULES.contentMaxLines || bytes > LETTER_RULES.contentMaxBytes);
   if (state.showErrors) renderFieldErrors(result);
@@ -357,7 +345,7 @@ async function onSubmit(event) {
     updateMeta();
     showView('success', {
       focus: els.successTitle,
-      message: `편지를 잘 받았어요. 관리자 확인 후 모카에게 전달할게요. 다음 편지는 ${formatKst(state.nextAllowedMs)}부터 보낼 수 있어요.`,
+      message: t().announceSuccess(formatKst(state.nextAllowedMs)),
     });
     return;
   }
@@ -368,7 +356,7 @@ async function onSubmit(event) {
     state.confirmedWait = true;
     showView('limited', {
       focus: els.limitedTitle,
-      message: `이 브라우저에서 최근에 보낸 편지가 있어요. 다음 편지는 ${formatKst(state.nextAllowedMs)}부터 보낼 수 있어요.`,
+      message: t().announceLimited(formatKst(state.nextAllowedMs)),
     });
     return;
   }
@@ -380,7 +368,7 @@ async function onSubmit(event) {
     return;
   }
 
-  showFormError(SERVER_MESSAGES[data.code] || SERVER_MESSAGES.default);
+  showFormError(data.code);
 }
 
 /* ---------- 움직임 설정 ---------- */
@@ -394,12 +382,48 @@ function applyMotion() {
   const reduced = isReducedMotion();
   root.classList.toggle('motion-off', reduced);
   root.classList.toggle('motion-on', !reduced);
-  els.motionBtn.textContent = reduced ? LABELS.motionOn : LABELS.motionOff;
+  els.motionBtn.textContent = reduced ? t().motionOn : t().motionOff;
 }
 
 function readMotionPref() {
   const saved = storage.get(STORAGE_KEYS.motion);
   return saved === 'on' || saved === 'off' ? saved : null;
+}
+
+/* ---------- 언어 (한국어 / 日本語) ---------- */
+// 우선순위: 주소의 ?lang= → 저장한 선택 → 브라우저 언어 → 한국어
+function initialLang() {
+  const fromUrl = new URLSearchParams(window.location.search).get('lang');
+  if (LANGS.includes(fromUrl)) return fromUrl;
+  const saved = storage.get(STORAGE_KEYS.lang);
+  if (LANGS.includes(saved)) return saved;
+  const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+  return prefs.some((l) => /^ja\b/i.test(l)) ? 'ja' : 'ko';
+}
+
+function applyLanguage(lang) {
+  state.lang = LANGS.includes(lang) ? lang : 'ko';
+  const dict = t();
+  root.lang = dict.htmlLang;
+  document.title = dict.pageTitle;
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const value = dict[el.dataset.i18n];
+    if (typeof value === 'string' && el.textContent !== value) el.textContent = value;
+  });
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    el.setAttribute('aria-label', dict[el.dataset.i18nAria]);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.setAttribute('placeholder', dict[el.dataset.i18nPlaceholder]);
+  });
+  els.langButtons.forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.lang === state.lang)));
+
+  updateSubmitButton();
+  applyMotion();
+  updateMeta();
+  renderFormError();
+  showStatusNote(state.statusNoteKey);
+  startRemainingTicker();
 }
 
 /* ---------- 시작 ---------- */
@@ -414,8 +438,6 @@ function init() {
     nameError: byId('sender-error'),
     contentError: byId('content-error'),
     meta: byId('content-meta'),
-    lines: byId('content-lines'),
-    bytes: byId('content-bytes'),
     formError: byId('form-error'),
     formStatus: byId('form-status'),
     submitBtn: byId('submit-btn'),
@@ -429,9 +451,11 @@ function init() {
     limitedRemaining: byId('limited-remaining'),
     limitedKept: byId('limited-kept'),
     motionBtn: byId('motion-btn'),
+    langButtons: Array.from(document.querySelectorAll('[data-lang]')),
     live: byId('live'),
   });
 
+  state.lang = initialLang();
   state.motionPref = readMotionPref();
   applyMotion();
   els.motionBtn.addEventListener('click', () => {
@@ -447,6 +471,13 @@ function init() {
   const emojiLayer = createEmojiLayer(els.emojiLayer);
   window.addEventListener('pagehide', (e) => {
     if (!e.persisted) emojiLayer.destroy();
+  });
+
+  els.langButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      applyLanguage(btn.dataset.lang);
+      storage.set(STORAGE_KEYS.lang, state.lang);
+    });
   });
 
   els.form.addEventListener('submit', onSubmit);
@@ -467,8 +498,10 @@ function init() {
       state.motionPref = readMotionPref();
       applyMotion();
     }
+    if (e.key === STORAGE_KEYS.lang && LANGS.includes(e.newValue)) applyLanguage(e.newValue);
   });
 
+  applyLanguage(state.lang);
   updateMeta();
   const cached = readCachedNextAllowed();
   if (cached) {

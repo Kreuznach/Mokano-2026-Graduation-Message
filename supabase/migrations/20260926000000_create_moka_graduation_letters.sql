@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────
--- 모카 마지막 무대 팬 편지 (mokano.live 와 같은 Supabase 프로젝트)
+-- 모카 마지막 라이브(LAST LIVE) 팬 편지 (mokano.live 와 같은 Supabase 프로젝트)
 -- 새 객체만 만듭니다. 기존 테이블(fan_messages, events 등)은 건드리지 않습니다.
 -- 적용: Supabase 대시보드 → SQL Editor 에 이 파일 전체를 붙여 넣고 Run
 --       (또는 supabase CLI: supabase db push)
@@ -32,7 +32,7 @@ create table if not exists public.moka_graduation_letters (
 );
 
 comment on table public.moka_graduation_letters is
-  '팬이 모카에게 보낸 마지막 무대 기념 편지. 저장은 서버 API(submit_moka_graduation_letter)로만 합니다.';
+  '팬이 모카에게 보낸 마지막 라이브 기념 편지. 저장은 서버 API(submit_moka_graduation_letter)로만 합니다.';
 comment on column public.moka_graduation_letters.sender_name is 'null 이면 익명으로 표시';
 comment on column public.moka_graduation_letters.content is 'plain text 원문 (HTML/Markdown 으로 렌더링하지 않음)';
 comment on column public.moka_graduation_letters.reviewed_at is '향후 관리자 검수 시각';

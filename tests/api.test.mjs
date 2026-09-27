@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import { createTestDb, makeRpc } from './helpers/db.mjs';
 import { handleStatus, handleSubmit, createSupabaseRpc, COOKIE_NAME, MAX_BODY_BYTES } from '../server/letters-api.js';
 
+const b64url = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+const fakeJwt = (payload) => `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url(payload)}.signature-never-leaks`;
+
 const ORIGIN = 'https://letters.example';
 const ENV = {
   SUPABASE_URL: 'https://project.supabase.example',
-  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key-never-leaks',
+  SUPABASE_SERVICE_ROLE_KEY: fakeJwt({ iss: 'supabase', ref: 'project', role: 'service_role' }),
   LETTER_COOKIE_SECRET: 'test-cookie-secret-0123456789abcdef-0123456789',
 };
 

@@ -27,6 +27,8 @@
   --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
   --font-ko: "Pretendard", "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "맑은 고딕",
     "Hiragino Sans", "Yu Gothic", "Meiryo", system-ui, -apple-system, "Segoe UI", sans-serif, var(--font-emoji);
+  --font-ja: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", "Meiryo", "Noto Sans JP",
+    "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, "Segoe UI", sans-serif, var(--font-emoji);
 }
 
 *,
@@ -54,6 +56,12 @@ body {
   line-height: 1.6;
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+
+html:lang(ja) body {
+  font-family: var(--font-ja);
+  word-break: normal;
+  line-break: strict;
 }
 
 p,
@@ -208,7 +216,23 @@ textarea {
   width: 100%;
   max-width: 600px;
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.chip-btn[aria-pressed="true"],
+.chip-btn[aria-pressed="true"]:hover {
+  background: var(--letter-accent);
+  border-color: var(--letter-accent);
+  color: #fff;
 }
 
 .back-link {

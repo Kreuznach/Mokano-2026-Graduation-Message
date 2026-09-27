@@ -1,6 +1,6 @@
 # Mokano-2026-Graduation-Message
 
-모카의 마지막 무대를 기념해 팬이 모카에게 편지를 보내는 페이지 (`/letters/write`).
+모카의 마지막 라이브(LAST LIVE)를 기념해 팬이 모카에게 편지를 보내는 페이지 (`/letters/write`, 한국어 · 日本語).
 
 - 정적 페이지 + Cloudflare Pages Functions + Supabase
 - mokano.live(`Pink-Queen-Reigns`, Vercel)와 **따로 배포**하고, mokano.live 의 Supabase DB 에 편지만 저장

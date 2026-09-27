@@ -1,6 +1,6 @@
 # 모카에게 편지 쓰기 (팬 편지)
 
-팬이 로그인 없이 모카에게 **마지막 무대 기념 편지**를 보내는 기능입니다.
+팬이 로그인 없이 모카에게 **마지막 라이브(LAST LIVE) 기념 편지**를 보내는 기능입니다.
 편지는 먼저 Supabase에 `pending`(검수 대기) 상태로 저장되고, 관리자가 확인한 뒤 모카에게 전달됩니다.
 
 - 주소: `/letters/write` (첫 화면 `/`에 들어오면 이 주소로 이동)
@@ -18,7 +18,8 @@
 |---|---|
 | `public/letters/write.html` | 편지 쓰기 화면 |
 | `public/assets/letters.css` | 색·카드·편지지·이모지 움직임 (맨 위 `:root`에서 색 변경) |
-| `public/assets/letters.js` | 입력 확인, 전송, 48시간 안내, 움직임 끄기/켜기 |
+| `public/assets/letters.js` | 입력 확인, 전송, 48시간 안내, 움직임 끄기/켜기, 언어 전환 |
+| `public/assets/letters-i18n.js` | 화면 문구 **한국어(ko) / 일본어(ja)**. 글자를 바꿀 때는 이 파일만 고치면 돼요 |
 | `public/assets/emoji-layer.js` | 떠다니는 이모지 (종류·개수는 맨 위 `EMOJI_CONFIG`) |
 | `public/assets/letter-rules.js` | 이름 40자 / 2,000줄 / 256KB 규칙. **브라우저와 서버가 같이 씀** |
 | `functions/api/letters/status.js` | `GET /api/letters/status` 지금 보낼 수 있는지 확인 |
@@ -165,7 +166,17 @@ mokano.live 도 Supabase CLI 없이 SQL Editor 에 직접 붙여 넣는 방식�
 
 ---
 
-## 7. 입력 규칙
+## 7. 언어 (한국어 / 日本語)
+
+- 오른쪽 위 `한국어 / 日本語` 버튼으로 바꿔요. 쓰던 내용과 남은 시간은 그대로이고, 오류 문구도 바뀐 언어로 다시 보여요.
+- 처음 언어는 이 순서로 정해요: 주소의 `?lang=ja` / `?lang=ko` → 전에 고른 언어(`localStorage` `mokano:letters:lang`) → 브라우저 언어가 일본어면 日本語 → 한국어
+- 일본 팬에게는 `https://(주소)/letters/write?lang=ja` 를 공유하면 돼요.
+- 시각은 두 언어 모두 `KST` 로 표시해요 (일본 시각과 같아요).
+- 서버는 언어와 상관없이 같은 규칙으로 저장해요. 일본어 편지도 그대로 보존돼요.
+
+---
+
+## 8. 입력 규칙
 
 | 항목 | 규칙 |
 |---|---|
@@ -179,11 +190,12 @@ mokano.live 도 Supabase CLI 없이 SQL Editor 에 직접 붙여 넣는 방식�
 
 ---
 
-## 8. 검사하기
+## 9. 검사하기
 
 ```powershell
 npm test                 # 입력 규칙 · DB(권한/제한/동시성) · mokano.live 관리자 정책 · API 자동 검사
 npm run build:functions  # 서버 API가 Cloudflare 형식으로 빌드되는지 확인
+npm run check:config     # .dev.vars 의 Supabase URL·키가 같은 프로젝트인지, 실제로 연결되는지 확인 (비밀값 출력 없음)
 ```
 
 `npm test`는 실제 마이그레이션 SQL을 메모리 Postgres(PGlite)에 적용해서 확인해요.
@@ -200,7 +212,7 @@ Invoke-WebRequest "$env:SUPABASE_URL/rest/v1/rpc/get_moka_graduation_letter_stat
 
 ---
 
-## 9. 나중에 관리자·모카 화면을 붙일 때 (mokano.live)
+## 10. 나중에 관리자·모카 화면을 붙일 때 (mokano.live)
 
 mokano.live 는 이미 `/admin` (미들웨어 + `profiles.role` 확인)과 `/moka` (모카 계정 로그인)을 갖고 있어요.
 선택 정책(4번의 3)을 적용했다면 **기존 `fan_messages` 관리 화면과 같은 방식**으로 만들 수 있어요.

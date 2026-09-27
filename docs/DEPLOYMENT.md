@@ -100,6 +100,15 @@ select public.get_moka_graduation_letter_status(repeat('a', 64));
   (편지 서비스 전용 키라서 문제가 생기면 이 키만 끌 수 있어요)
 - 또는 "Legacy API keys" 탭의 `service_role` 키
 
+> ⚠️ **키와 URL 은 반드시 같은 프로젝트**에서 복사하세요. 다른 프로젝트의 키를 넣으면 저장이 모두 실패해요.
+> Cloudflare 에 넣기 전에 `.dev.vars` 에 같은 값을 넣고 확인하세요 (비밀값은 화면에 출력되지 않아요):
+>
+> ```powershell
+> npm run check:config
+> ```
+>
+> `✓ Supabase 연결 성공` 이 나오면 그 값 그대로 Cloudflare Secret 에 넣으면 돼요.
+
 > ⚠️ mokano.live 저장소(Pink-Queen-Reigns)의 `.env.example` 에 실제 `service_role` 키로 보이는 값이 git 에 올라가 있어요.
 > 이 키는 이미 노출된 것으로 보고 **교체(rotate)** 하는 것을 권장해요. 교체하면 mokano.live 의 Vercel 환경변수도 새 값으로 바꿔야 해요.
 > 편지 서비스에는 위의 **전용 secret key** 를 쓰면 영향이 작아요.
@@ -246,6 +255,9 @@ mokano.live(Pink-Queen-Reigns)에는 링크 코드가 이미 들어가 있고, *
 
 링크를 숨기고 싶으면 이 환경변수를 지우고 다시 Redeploy 하면 돼요.
 
+일본 팬에게 공유할 때는 주소 뒤에 `?lang=ja` 를 붙이면 처음부터 일본어로 열려요 (예: `https://letters.mokano.live/letters/write?lang=ja`).
+주소에 `lang` 이 없으면 브라우저 언어가 일본어일 때 자동으로 일본어, 그 외에는 한국어로 열려요.
+
 편지 페이지의 "모카 한 모금으로 돌아가기" 는 `https://mokano.live/` 로 연결돼 있어요 (`public/letters/write.html`).
 
 ---
@@ -285,8 +297,11 @@ Vercel 이나 다른 곳의 DNS 를 쓰면 이 단계는 건너뛰어도 돼요.
 | 증상 | 원인 | 해결 |
 |---|---|---|
 | `/letters/write` 가 404 | 출력 폴더 설정이 틀림 | Build output directory 를 `public` 으로 → 다시 배포 |
-| "지금은 편지를 받을 준비가 되지 않았어요" (500 `server_misconfigured`) | 환경변수가 없거나, 추가 후 재배포를 안 함, 또는 `LETTER_COOKIE_SECRET` 이 32자 미만 | 4단계 6~7 다시 확인 |
-| "편지함이 잠시 응답하지 않아요" (503) | DB 함수가 없음 또는 키가 틀림 | Functions 로그 확인: `code: 'PGRST202'` → 2-1 SQL 미실행 / `status: 401` → 키 확인 |
+| "지금은 편지를 받을 준비가 되지 않았어요" (500 `server_misconfigured`) | 환경변수가 없거나 틀림, 추가 후 재배포를 안 함 | Functions 로그의 `server misconfigured: ...` 문구가 원인이에요. 로컬에서 `npm run check:config` 로 확인 후 4단계 6~7 |
+| 로그에 `belongs to project "A" but SUPABASE_URL is project "B"` | **다른 Supabase 프로젝트의 키**를 넣음 | `SUPABASE_URL` 프로젝트(B)의 API Keys 화면에서 키를 다시 복사 → Secret 교체 → Retry deployment |
+| 로그에 `Supabase rejected SUPABASE_SERVICE_ROLE_KEY` | 키가 폐기되었거나 다른 프로젝트 키(`sb_secret_` 키는 미리 확인 불가) | 위와 같이 키 교체 |
+| 로그에 `letter RPC not found` | 2-1 SQL 을 실행하지 않음 | 2-1 실행 |
+| "편지함이 잠시 응답하지 않아요" (503) | Supabase 일시 장애 | 잠시 후 다시. 계속되면 Supabase 상태 페이지 확인 |
 | "이 주소에서는 편지를 보낼 수 없어요" (403) | 다른 도메인에서 프록시함 | `LETTER_ALLOWED_ORIGINS` 에 그 주소(예: `https://mokano.live`)를 넣고 재배포 |
 | 쿠키 안내가 계속 나옴 (428) | 브라우저가 쿠키를 막음 | 사이트 데이터(쿠키) 허용 안내. 서버는 정상 |
 | 커스텀 도메인 522 / 인증서 대기 | CNAME 이 아직 없거나 전파 중 | 6-2 → 6-3 순서 확인, 잠시 기다리기 |
@@ -298,6 +313,7 @@ Vercel 이나 다른 곳의 DNS 를 쓰면 이 단계는 건너뛰어도 돼요.
 
 - [ ] Supabase: 2-1 SQL 실행 (필요하면 2-2 도)
 - [ ] 전용 secret key 발급, mokano.live 의 노출된 키 교체 검토
+- [ ] `npm run check:config` → `✓ Supabase 연결 성공`
 - [ ] Cloudflare Pages: 출력 폴더 `public`, Secret 3개, 재배포
 - [ ] pages.dev 주소에서 테스트 편지 → Supabase 에 `pending` 확인 → 테스트 편지 삭제
 - [ ] (선택) `letters.mokano.live` 연결
