@@ -134,7 +134,7 @@ D:\Projects\CodingLan\Mokano-2026-Graduation-Countdown 의 모든 내용을 읽�
 - 장식 레이어는 `pointer-events: none`, `aria-hidden="true"`, `user-select: none`을 적용하고 카드보다 뒤에 둔다.
 - CSS transform과 opacity 위주로 구현한다. 매 프레임 React state를 갱신하지 않는다.
 - SSR에서 무작위 값 때문에 hydration 오류가 생기지 않도록 고정 seed 또는 mount 이후 생성 방식을 사용한다. 입력할 때마다 위치가 재생성되지 않게 한다.
-- 움직임 끄기/켜기는 localStorage에 기억한다. 첫 방문에는 prefers-reduced-motion을 존중하고, 움직임을 끄면 배경 조명 애니메이션도 함께 멈춘다.
+- 움직임 끄기/켜기는 localStorage에 기억한다. 기본값은 움직임 켜기이며(기기의 prefers-reduced-motion 설정과 무관), 사용자가 직접 끈 경우에만 배경 조명 애니메이션까지 함께 멈춘다.
 - 비활성 탭에서는 애니메이션을 일시 정지하고 컴포넌트 제거 시 이벤트와 타이머를 정리한다.
 - 입력 중이나 전송 완료 상태에서도 화면이 흔들리거나 폼 레이아웃이 바뀌지 않게 한다.
 

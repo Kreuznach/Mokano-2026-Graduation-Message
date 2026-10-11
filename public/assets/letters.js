@@ -49,7 +49,6 @@ const state = {
 
 const els = {};
 const root = document.documentElement;
-const reduceQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
 
 /* ---------- 시간 ---------- */
 const serverNow = () => Date.now() + state.serverOffsetMs;
@@ -372,10 +371,9 @@ async function onSubmit(event) {
 }
 
 /* ---------- 움직임 설정 ---------- */
+// 기본값은 '움직임 켜기'. 사용자가 직접 끈 경우에만 줄인다 (기기 설정은 따르지 않음)
 function isReducedMotion() {
-  if (state.motionPref === 'on') return false;
-  if (state.motionPref === 'off') return true;
-  return Boolean(reduceQuery && reduceQuery.matches);
+  return state.motionPref === 'off';
 }
 
 function applyMotion() {
@@ -463,10 +461,6 @@ function init() {
     storage.set(STORAGE_KEYS.motion, state.motionPref);
     applyMotion();
   });
-  if (reduceQuery) {
-    if (reduceQuery.addEventListener) reduceQuery.addEventListener('change', applyMotion);
-    else if (reduceQuery.addListener) reduceQuery.addListener(applyMotion);
-  }
 
   const emojiLayer = createEmojiLayer(els.emojiLayer);
   window.addEventListener('pagehide', (e) => {
